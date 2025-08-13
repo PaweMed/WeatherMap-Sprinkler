@@ -38,7 +38,7 @@ class Weather {
   float cachedLon = 0.0f;
   bool  coordsValid = false;
 
-  RainHistory rainHistory; // historia opadów 6h
+  RainHistory rainHistory; // historia opadów (rolling 6h, trwała w LittleFS)
 
   bool resolveCoords() {
     if (coordsValid && cachedLat != 0.0f && cachedLon != 0.0f) return true;
@@ -53,7 +53,6 @@ class Weather {
     int codeGeo = httpGeo.GET();
     if (codeGeo > 0) {
       String respGeo = httpGeo.getString();
-      Serial.print("[Weather] Odpowiedź OWM GEO: "); Serial.println(respGeo);
       JsonDocument docGeo;
       DeserializationError err = deserializeJson(docGeo, respGeo);
       if (!err) {
@@ -171,7 +170,7 @@ public:
               sunset = String(buf);
             } else sunset = "";
 
-            // Dodanie do lokalnej historii opadów (6h rolling)
+            // aktualizacja historii opadów (rolling 6h)
             rainHistory.addRainMeasurement(rain);
 
             everSucceededWeather = true;
@@ -287,27 +286,26 @@ public:
   float getDailyMaxTemp() const { return temp_max_tomorrow; }
   float getDailyHumidityForecast() const { return humidity_tomorrow_max; }
 
-  // *** NOWA LOGIKA PROCENTOWA ***
-  // Zasady:
+  // *** LOGIKA PROCENTOWA – zgodnie z ustaleniami ***
   // ≥5mm (6h)           -> 0%
   // 2–5mm (6h)          -> 40%
-  // 0–2mm i hum >70%    -> 80%   (wilgotność: prognoza dzienna, spójnie z wcześniejszymi założeniami)
-  // temp >27°C i hum <50% -> 120% (temp: prognozowane dzienne max, hum: prognoza dzienna)
-  // pozostałe           -> 100%
+  // 0–2mm (6h) i H_now>70%  -> 80%
+  // T_now>27°C i H_now<50%  -> 120%
+  // pozostałe            -> 100%
   int getWateringPercent() {
-    float rain6h = getLast6hRain();
-    float tempMax = getDailyMaxTemp();
-    float humDay  = getDailyHumidityForecast();
+    const float rain6h = getLast6hRain(); // suma z ostatnich 6h (RainHistory)
+    const float H_now  = humidity;        // BIEŻĄCA wilgotność
+    const float T_now  = temp;            // BIEŻĄCA temperatura
 
-    // 1) Opady mają najwyższy priorytet
+    // 1) Opady – najwyższy priorytet
     if (rain6h >= 5.0f) return 0;
-    if (rain6h >= 2.0f && rain6h < 5.0f) return 40;
+    if (rain6h >= 2.0f) return 40;
 
-    // 2) Mało opadów (0–2) i wysoka wilgotność
-    if (rain6h >= 0.0f && rain6h < 2.0f && humDay > 70.0f) return 80;
+    // 2) Gorąco i sucho – zwiększamy
+    if (T_now > 27.0f && H_now < 50.0f) return 120;
 
-    // 3) Bardzo gorąco i sucho (prognoza)
-    if (tempMax > 27.0f && humDay < 50.0f) return 120;
+    // 3) Mało opadów i bardzo wilgotno – skracamy
+    if (rain6h < 2.0f && H_now > 70.0f) return 80;
 
     // 4) Domyślnie
     return 100;
