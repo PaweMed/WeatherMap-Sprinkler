@@ -283,28 +283,50 @@ public:
           );
           if (pushover && config && config->getEnablePushover())
             pushover->send(
-              String("Automat: odwołano (6h=") + String(rain6h,1) + "mm, "
+              String("Automat: odwołano podlewanie (6h=") + String(rain6h,1) + "mm, "
               "Tmax=" + String(tMax,1) + "°C, Hmax=" + String(hMax) + "%)"
             );
           continue;
         } else {
           actualDuration = (actualDuration * wateringPercent) / 100;
-          if (logs) logs->add(
-            String("Automat: Strefa ") + String(P.zone + 1)
-            + ": bazowo " + String(baseDuration) + "min, "
-            + "współczynnik " + String(wateringPercent) + "% → "
-            + String(actualDuration) + "min "
-            + "(6h=" + String(rain6h, 1) + "mm, "
-            + "Tmax=" + String(tMax, 1) + "°C, "
-            + "Hmax=" + String(hMax) + "%)"
-          );
-          if (pushover && config && config->getEnablePushover()) {
-            pushover->send(
-              String("Strefa ") + String(P.zone + 1) + ": "
-              + String(baseDuration) + "min → "
-              + String(actualDuration) + "min (" + String(wateringPercent) + "%). "
-              + "6h=" + String(rain6h,1) + "mm, Tmax=" + String(tMax,1) + "°C, Hmax=" + String(hMax) + "%."
+
+          // Czytelne, jawne komunikaty dla 80%, 100%, 120%
+          if (logs) {
+            logs->add(
+              String("Automat: Strefa ") + String(P.zone + 1)
+              + ": bazowo " + String(baseDuration) + "min, "
+              + "współczynnik " + String(wateringPercent) + "% → "
+              + String(actualDuration) + "min "
+              + "(6h=" + String(rain6h, 1) + "mm, "
+              + "Tmax=" + String(tMax, 1) + "°C, "
+              + "Hmax=" + String(hMax) + "%)"
             );
+          }
+
+          if (pushover && config && config->getEnablePushover()) {
+            String detail = String("6h=") + String(rain6h,1) + "mm, Tmax=" + String(tMax,1) + "°C, Hmax=" + String(hMax) + "%.";
+            if (wateringPercent == 80) {
+              pushover->send(
+                String("Automat: strefa ") + String(P.zone + 1) + " – zmniejszono do 80% "
+                "(plan " + String(baseDuration) + "min → " + String(actualDuration) + "min). " + detail
+              );
+            } else if (wateringPercent == 120) {
+              pushover->send(
+                String("Automat: strefa ") + String(P.zone + 1) + " – zwiększono do 120% "
+                "(plan " + String(baseDuration) + "min → " + String(actualDuration) + "min). " + detail
+              );
+            } else if (wateringPercent == 100) {
+              pushover->send(
+                String("Automat: strefa ") + String(P.zone + 1) + " – podlewanie normalne (100%) "
+                "(plan " + String(baseDuration) + "min → " + String(actualDuration) + "min). " + detail
+              );
+            } else {
+              // Inne wartości procentowe (np. w przyszłości)
+              pushover->send(
+                String("Automat: strefa ") + String(P.zone + 1) + " – " + String(wateringPercent) + "% "
+                "(plan " + String(baseDuration) + "min → " + String(actualDuration) + "min). " + detail
+              );
+            }
           }
         }
 
