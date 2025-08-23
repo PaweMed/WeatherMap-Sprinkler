@@ -593,7 +593,7 @@ namespace WebServerUI {
     });
 
     // --- onRequestBody do obsługi JSON POST/PUT (wifi/settings/zones/nazwy/programy)
-    server->onRequestBody([config, relays, programs, logs, weather](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t, size_t) {
+    server->onRequestBody([config, relays, programs, logs, weather, pushover](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t, size_t) {
       String url = request->url();
       auto method = request->method();
 
@@ -640,6 +640,11 @@ namespace WebServerUI {
           if (logs) {
             if (!wasActive && isActive) logs->add("Ręcznie włączono strefę #" + String(id+1));
             else if (wasActive && !isActive) logs->add("Ręcznie wyłączono strefę #" + String(id+1));
+          }
+          // NOWE: Pushover dla ręcznego sterowania
+          if (pushover && config && config->getEnablePushover()) {
+            if (!wasActive && isActive) pushover->send("Ręcznie włączono strefę #" + String(id+1));
+            else if (wasActive && !isActive) pushover->send("Ręcznie wyłączono strefę #" + String(id+1));
           }
         }
         JsonDocument resp; relays->toJson(resp);
