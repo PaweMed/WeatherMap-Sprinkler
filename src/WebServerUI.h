@@ -570,14 +570,15 @@ namespace WebServerUI {
       req->send(200, "application/json", json);
     });
 
-    // --- Watering percent (bez i z ukośnikiem)
+    // --- Watering percent (bez i z ukośnikiem) – TERAZ z danymi BIEŻĄCYMI
     server->on("/api/watering-percent", HTTP_GET, [weather](AsyncWebServerRequest *req){
       Serial.println("[API] GET /api/watering-percent");
       JsonDocument doc;
       doc["percent"] = weather->getWateringPercent();
       doc["rain_6h"] = weather->getLast6hRain();
-      doc["daily_max_temp"] = weather->getDailyMaxTemp();
-      doc["daily_humidity_forecast"] = weather->getDailyHumidityForecast();
+      doc["temp_now"] = weather->getCurrentTemp();         // bieżąca temperatura
+      doc["humidity_now"] = weather->getCurrentHumidity(); // bieżąca wilgotność
+      doc["explain"] = weather->getWateringDecisionExplain();   // NOWE POLE
       String json; serializeJson(doc, json);
       req->send(200, "application/json", json);
     });
@@ -586,8 +587,9 @@ namespace WebServerUI {
       JsonDocument doc;
       doc["percent"] = weather->getWateringPercent();
       doc["rain_6h"] = weather->getLast6hRain();
-      doc["daily_max_temp"] = weather->getDailyMaxTemp();
-      doc["daily_humidity_forecast"] = weather->getDailyHumidityForecast();
+      doc["temp_now"] = weather->getCurrentTemp();
+      doc["humidity_now"] = weather->getCurrentHumidity();
+      doc["explain"] = weather->getWateringDecisionExplain();   // NOWE POLE
       String json; serializeJson(doc, json);
       req->send(200, "application/json", json);
     });
