@@ -334,6 +334,10 @@ public:
   float getDailyMaxTemp() const { return temp_max_tomorrow; }
   float getDailyHumidityForecast() const { return humidity_tomorrow_max; }
 
+  // --- NOWE: bieżące (rzeczywiste) parametry, których używa getWateringPercent() ---
+  float getCurrentTemp() const { return temp; }
+  float getCurrentHumidity() const { return humidity; }
+
   // *** LOGIKA PROCENTOWA – zgodnie z ustaleniami ***
   // ≥5mm (6h)           -> 0%
   // 2–5mm (6h)          -> 40%
