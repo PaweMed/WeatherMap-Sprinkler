@@ -364,4 +364,21 @@ public:
   }
 
   bool wateringAllowed() { return getWateringPercent() > 0; }
+
+    String getWateringDecisionExplain() {
+    const float rain6h = getLast6hRain();
+    const float H_now  = humidity;
+    const float T_now  = temp;
+
+    if (rain6h >= 5.0f) 
+      return "Opady 6h=" + String(rain6h,1) + "mm ≥5mm → 0%";
+    if (rain6h >= 2.0f) 
+      return "Opady 6h=" + String(rain6h,1) + "mm 2–5mm → 40%";
+    if (T_now > 27.0f && H_now < 50.0f) 
+      return "Temp=" + String(T_now,1) + "°C >27 i Hum=" + String(H_now,0) + "% <50 → 120%";
+    if (rain6h < 2.0f && H_now > 70.0f) 
+      return "Opady 6h=" + String(rain6h,1) + "mm <2 i Hum=" + String(H_now,0) + "% >70 → 80%";
+    return "Brak szczególnych warunków (opady=" + String(rain6h,1) + "mm, T=" + String(T_now,1) + "°C, H=" + String(H_now,0) + "%) → 100%";
+  }
+
 };
